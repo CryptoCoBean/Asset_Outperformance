@@ -75,6 +75,10 @@ for x in range(0, sizing):
         now = datetime.now(timezone.utc)
         time_since_ath = now - ath_time.to_pydatetime().replace(tzinfo=timezone.utc)
 
+        df['volume_usdt'] = df['volume'] * df['close']
+        latest_volume = df['volume_usdt'].iloc[-1]
+        avg_volume_7d = df['volume_usdt'].tail(7).mean()
+
         # =========================
         # RESULT DATAFRAME
         # =========================
@@ -85,7 +89,9 @@ for x in range(0, sizing):
             'current_price': current_price,
             'drawdown_%': drawdown_pct,
             'time_since_ath_days': time_since_ath.days,
-            'time_since_ath_hours': time_since_ath.total_seconds() / 3600
+            'time_since_ath_hours': time_since_ath.total_seconds() / 3600,
+            'volume_latest': latest_volume,
+            'usd_volume_7d_avg': avg_volume_7d
         }])
 
         result_df = pd.concat([result_df, single_result], ignore_index=True)

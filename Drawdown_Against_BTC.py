@@ -104,6 +104,13 @@ for x in range(0, sizing):
         now = datetime.now(timezone.utc)
         time_since_ath = now - ath_time.to_pydatetime().replace(tzinfo=timezone.utc)
 
+        # =========================
+        # VOLUME METRICS
+        # =========================
+        merged['volume_usdt'] = merged['volume'] * merged['close']
+        latest_volume = merged['volume_usdt'].iloc[-1]
+        avg_volume_7d = merged['volume_usdt'].tail(7).mean()
+
         single_result = pd.DataFrame([{
             'symbol': symbol,
             'ath_asset_btc': ath_price,
@@ -111,7 +118,9 @@ for x in range(0, sizing):
             'current_asset_btc': current_price,
             'drawdown_%': drawdown_pct,
             'time_since_ath_days': time_since_ath.days,
-            'time_since_ath_hours': time_since_ath.total_seconds() / 3600
+            'time_since_ath_hours': time_since_ath.total_seconds() / 3600,
+            'volume_latest': latest_volume,
+            'usd_volume_7d_avg': avg_volume_7d
         }])
 
         result_df = pd.concat([result_df, single_result], ignore_index=True)
