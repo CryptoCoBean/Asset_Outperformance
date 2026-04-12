@@ -20,7 +20,6 @@ symbol_list_usdt_pairs = []
 for x in range (0, len(symbol_list)):
     if "USDT" in symbol_list[x]:
         usdt_ticker = symbol_list[x].replace(":USDT", "")
-        # filtered_symbols = [symbol for symbol in usdt_ticker if '-' not in symbol.split('/')[0]]
         if "-" in usdt_ticker:
             pass
         else:
@@ -29,7 +28,6 @@ for x in range (0, len(symbol_list)):
             
     else:
         pass
-# print(symbol_list_usdt_pairs)
 
 limits = 1000
 result_df = pd.DataFrame()
