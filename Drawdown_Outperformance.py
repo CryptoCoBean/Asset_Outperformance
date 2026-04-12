@@ -2,75 +2,102 @@ import ccxt
 import pandas as pd
 from datetime import datetime, timezone
 import ps
+import time
 
-# =========================
-# CONFIG
-# =========================
-SYMBOL = 'BTC/USDT'
-TIMEFRAME = '1d'   # you can change (1h, 4h, etc.)
-LIMIT = 1000       # max candles per fetch
-
-# =========================
-# INIT EXCHANGE
-# =========================
-exchange = ccxt.binanceusdm({
+exchange_id = 'binanceusdm'
+exchange_class = getattr(ccxt, exchange_id)
+binance = exchange_class({
+    'apiKey': ps.binance_apiKey,
+    'secret': ps.binance_secret,
     'enableRateLimit': True,
 })
 
-# =========================
-# FETCH DATA
-# =========================
-ohlcv = exchange.fetch_ohlcv(SYMBOL, timeframe=TIMEFRAME, limit=LIMIT)
+tickers = binance.fetch_tickers()
+symbol_list = list(tickers.keys())
+    # print(symbol_list)
 
-# Convert to DataFrame
-df = pd.DataFrame(ohlcv, columns=[
-    'timestamp', 'open', 'high', 'low', 'close', 'volume'
-])
+symbol_list_usdt_pairs = []
+for x in range (0, len(symbol_list)):
+    if "USDT" in symbol_list[x]:
+        usdt_ticker = symbol_list[x].replace(":USDT", "")
+        # filtered_symbols = [symbol for symbol in usdt_ticker if '-' not in symbol.split('/')[0]]
+        if "-" in usdt_ticker:
+            pass
+        else:
+            symbol_usdt_pairs = usdt_ticker.replace("/", "")
+            symbol_list_usdt_pairs.append(symbol_usdt_pairs)
+            
+    else:
+        pass
+# print(symbol_list_usdt_pairs)
 
-# Convert timestamp
-df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+limits = 1000
+result_df = pd.DataFrame()
+sizing = len(symbol_list_usdt_pairs)
+print("Total assets: ", sizing)
+for x in range(0, sizing):
+    time.sleep(0.1)
+    symbol = symbol_list_usdt_pairs[x]
+    print(f"{x}: {symbol}")
+    ohlcv = binance.fetch_ohlcv(symbol, timeframe='1d', limit=limits)
 
-# =========================
-# CALCULATIONS
-# =========================
+    if not ohlcv:
+        continue
+    
+    else:
 
-# ATH
-ath_price = df['high'].max()
+        # Convert to DataFrame
+        df = pd.DataFrame(ohlcv, columns=[
+            'timestamp', 'open', 'high', 'low', 'close', 'volume'
+        ])
 
-# Time of ATH
-ath_row = df.loc[df['high'].idxmax()]
-ath_time = ath_row['timestamp']
+        # Convert timestamp
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
 
-# Current price (last close)
-current_price = df['close'].iloc[-1]
+        # =========================
+        # CALCULATIONS
+        # =========================
 
-# Drawdown (%)
-drawdown_pct = ((current_price - ath_price) / ath_price) * 100
+        # ATH
+        ath_price = df['high'].max()
 
-# Time since ATH
-now = datetime.now(timezone.utc)
-time_since_ath = now - ath_time.to_pydatetime().replace(tzinfo=timezone.utc)
+        # Time of ATH
+        ath_row = df.loc[df['high'].idxmax()]
+        ath_time = ath_row['timestamp']
 
-# =========================
-# RESULT DATAFRAME
-# =========================
-result = pd.DataFrame([{
-    'symbol': SYMBOL,
-    'ath_price': ath_price,
-    'ath_time': ath_time,
-    'current_price': current_price,
-    'drawdown_%': drawdown_pct,
-    'time_since_ath_days': time_since_ath.days,
-    'time_since_ath_hours': time_since_ath.total_seconds() / 3600
-}])
+        # Current price (last close)
+        current_price = df['close'].iloc[-1]
+
+        # Drawdown (%)
+        drawdown_pct = ((current_price - ath_price) / ath_price) * 100
+
+        # Time since ATH
+        now = datetime.now(timezone.utc)
+        time_since_ath = now - ath_time.to_pydatetime().replace(tzinfo=timezone.utc)
+
+        # =========================
+        # RESULT DATAFRAME
+        # =========================
+        single_result = pd.DataFrame([{
+            'symbol': symbol,
+            'ath_price': ath_price,
+            'ath_time': ath_time,
+            'current_price': current_price,
+            'drawdown_%': drawdown_pct,
+            'time_since_ath_days': time_since_ath.days,
+            'time_since_ath_hours': time_since_ath.total_seconds() / 3600
+        }])
+
+        result_df = pd.concat([result_df, single_result], ignore_index=True)
 
 # =========================
 # OUTPUT
 # =========================
-print(result)
+result_df_volume_sort = result_df.sort_values(by=['drawdown_%'], ascending=False)
 
 # Export CSV
-filename = f"{SYMBOL.replace('/', '_')}_ath_drawdown.csv"
-result.to_csv(filename, index=False)
+timestamp_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+filename = rf"{ps.drawdown_csv_output_path}{timestamp_str}_ath_drawdown.csv"
+result_df_volume_sort.to_csv(filename, index=False)
 
 print(f"\nSaved to {filename}")
