@@ -83,7 +83,9 @@ for x in range(0, sizing):
             # handle HIP-3 style perps too
             if "-" in base:
                 market_type = 'hip3'
-                base = base.split("-", 1)[1]
+                parts = base.split('-')
+                base =  f"{parts[0].lower()}:{parts[1].upper()}"
+                print(base)
 
             ohlcv = fetch_ochlv_for_hl.fetch_ohlcv_hl_adaptation(
                 base,
@@ -100,7 +102,7 @@ for x in range(0, sizing):
                 timeframe='1d',
                 limit=limits
             )
-            continue
+            # continue
 
         else:
             continue

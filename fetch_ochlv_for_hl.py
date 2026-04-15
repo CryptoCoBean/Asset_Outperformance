@@ -5,7 +5,7 @@ from hyperliquid.info import Info
 from hyperliquid.utils import constants
 
 # create Info client (skip websocket)
-info = Info(constants.MAINNET_API_URL, skip_ws=True)
+info = Info(constants.MAINNET_API_URL,perp_dexs=['','xyz','flx','vntl','hyna','km','cash','para'], skip_ws=True)
 
 
 def _parse_timeframe_ms(tf: str) -> int:
